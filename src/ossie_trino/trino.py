@@ -37,7 +37,7 @@ class TrinoClient:
         url: str,
         user: str,
         *,
-        source: str = "ossie-starrocks",
+        source: str = "ossie-trino",
         catalog: str | None = None,
         schema: str | None = None,
         timeout: float = 30.0,

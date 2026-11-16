@@ -10,8 +10,8 @@ import sys
 import threading
 from urllib.request import Request, urlopen
 
-from ossie_starrocks import Compiler, Query, TrinoClient, TrinoError
-from ossie_starrocks.gateway import SemanticGateway, create_server
+from ossie_trino import Compiler, Query, TrinoClient, TrinoError
+from ossie_trino.gateway import SemanticGateway, create_server
 
 
 CONTAINER = os.environ.get("TRINO_CONTAINER", "ossie-trino-live")
@@ -177,7 +177,6 @@ compiler = Compiler.from_text(json.dumps(model), format="json")
 
 joined = compiler.compile(
     Query(metrics=("revenue",), dimensions=("customers.mktsegment",)),
-    target="trino",
 )
 assert_same(
     "joined aggregate",
@@ -193,7 +192,6 @@ assert_same(
 
 true_division = compiler.compile(
     Query(metrics=("count_sevenths",)),
-    target="trino",
 )
 assert_numeric_close(
     "portable true division for integer aggregates",
@@ -217,7 +215,7 @@ quickstart = subprocess.run(
     [
         sys.executable,
         "-m",
-        "ossie_starrocks.cli",
+        "ossie_trino.cli",
         "query",
         "--model",
         "examples/trino-tpch/model.json",
@@ -316,7 +314,6 @@ staged_true_division = compiler.compile(
         metrics=("orders_per_customer_count",),
         dimensions=("customers.mktsegment",),
     ),
-    target="trino",
 )
 assert_numeric_close(
     "portable true division after stage stitching",
@@ -346,7 +343,6 @@ truncation = compiler.compile(
         metrics=("revenue",),
         dimensions=("orders.trunc_positive", "orders.trunc_negative"),
     ),
-    target="trino",
 )
 assert_same(
     "portable truncation toward zero",
@@ -366,7 +362,6 @@ string_search = compiler.compile(
             for suffix in ("position", "contains", "starts", "ends")
         ),
     ),
-    target="trino",
 )
 assert_same(
     "required string search functions",
@@ -398,7 +393,6 @@ statistics = compiler.compile(
             )
         )
     ),
-    target="trino",
 )
 assert_numeric_close(
     "sample and population statistical aggregates",
@@ -412,7 +406,6 @@ assert_numeric_close(
 
 portable_functions = compiler.compile(
     Query(metrics=("math_profile",), dimensions=("orders.status_label",)),
-    target="trino",
 )
 assert_same(
     "required string and math functions",
@@ -432,7 +425,6 @@ string_edges = compiler.compile(
         metrics=("revenue",),
         dimensions=("orders.status_left", "orders.status_right"),
     ),
-    target="trino",
 )
 assert_same(
     "portable LEFT and RIGHT functions",
@@ -448,7 +440,6 @@ assert_same(
 
 cross_grain = compiler.compile(
     Query(metrics=("revenue_per_customer",), dimensions=("customers.mktsegment",)),
-    target="trino",
 )
 assert_same(
     "cross-grain conditional metric",
@@ -488,7 +479,6 @@ filtered = compiler.compile(
         dimensions=("customers.mktsegment",),
         filter="orders.orderstatus = 'F'",
     ),
-    target="trino",
 )
 assert_same(
     "bound Layer 3 filter",

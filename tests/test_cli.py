@@ -12,8 +12,8 @@ from contextlib import redirect_stdout
 from io import StringIO
 from unittest.mock import Mock, patch
 
-from ossie_starrocks import TrinoColumn, TrinoResult
-from ossie_starrocks.cli import main
+from ossie_trino import TrinoColumn, TrinoResult
+from ossie_trino.cli import main
 from tests.fixtures import sales_model
 
 
@@ -34,7 +34,7 @@ class CliTests(unittest.TestCase):
                 rows=(("255.00",),),
             )
             output = StringIO()
-            with patch("ossie_starrocks.cli.TrinoClient", return_value=client), redirect_stdout(output):
+            with patch("ossie_trino.cli.TrinoClient", return_value=client), redirect_stdout(output):
                 exit_code = main([
                     "query",
                     "--model", str(model_path),
@@ -78,7 +78,7 @@ class CliTests(unittest.TestCase):
                 [
                     sys.executable,
                     "-m",
-                    "ossie_starrocks.cli",
+                    "ossie_trino.cli",
                     "compile",
                     "--model",
                     str(model_path),
@@ -91,7 +91,7 @@ class CliTests(unittest.TestCase):
                 env=environment,
             )
         self.assertEqual(0, completed.returncode, completed.stderr)
-        self.assertIn("LEFT JOIN `default_catalog`.`sales`.`customers`", completed.stdout)
+        self.assertIn("LEFT JOIN \"default_catalog\".\"sales\".\"customers\"", completed.stdout)
         self.assertEqual("", completed.stderr)
 
     def test_cli_returns_diagnostic_for_invalid_operator_type(self):
@@ -110,7 +110,7 @@ class CliTests(unittest.TestCase):
             environment = os.environ.copy()
             environment["PYTHONPATH"] = str(Path(__file__).parents[1] / "src")
             completed = subprocess.run(
-                [sys.executable, "-m", "ossie_starrocks.cli", "compile", "--model", str(model_path), "--request", str(request_path)],
+                [sys.executable, "-m", "ossie_trino.cli", "compile", "--model", str(model_path), "--request", str(request_path)],
                 check=False,
                 capture_output=True,
                 text=True,
@@ -136,7 +136,7 @@ class CliTests(unittest.TestCase):
                 [
                     sys.executable,
                     "-m",
-                    "ossie_starrocks.cli",
+                    "ossie_trino.cli",
                     "compile",
                     "--model",
                     str(model_path),
@@ -149,7 +149,7 @@ class CliTests(unittest.TestCase):
                 env=environment,
             )
         self.assertEqual(0, completed.returncode, completed.stderr)
-        self.assertIn("GROUP BY t0.`country`", completed.stdout)
+        self.assertIn("GROUP BY t0.\"country\"", completed.stdout)
         self.assertEqual("", completed.stderr)
 
     def test_cli_accepts_layer3_filter_expression(self):
@@ -171,7 +171,7 @@ class CliTests(unittest.TestCase):
                 [
                     sys.executable,
                     "-m",
-                    "ossie_starrocks.cli",
+                    "ossie_trino.cli",
                     "compile",
                     "--model",
                     str(model_path),
@@ -184,7 +184,7 @@ class CliTests(unittest.TestCase):
                 env=environment,
             )
         self.assertEqual(0, completed.returncode, completed.stderr)
-        self.assertIn("WHERE ((t0.`status` = 'complete') OR (t0.`status` = 'pending'))", completed.stdout)
+        self.assertIn("WHERE ((t0.\"status\" = 'complete') OR (t0.\"status\" = 'pending'))", completed.stdout)
         self.assertEqual("", completed.stderr)
 
     def test_cli_emits_trino_sql(self):
@@ -203,14 +203,12 @@ class CliTests(unittest.TestCase):
                 [
                     sys.executable,
                     "-m",
-                    "ossie_starrocks.cli",
+                    "ossie_trino.cli",
                     "compile",
                     "--model",
                     str(model_path),
                     "--request",
                     str(request_path),
-                    "--target",
-                    "trino",
                 ],
                 check=False,
                 capture_output=True,
@@ -219,7 +217,7 @@ class CliTests(unittest.TestCase):
             )
         self.assertEqual(0, completed.returncode, completed.stderr)
         self.assertIn('LEFT JOIN "default_catalog"."sales"."customers"', completed.stdout)
-        self.assertNotIn("`", completed.stdout)
+        self.assertNotIn('`', completed.stdout)
 
 
 if __name__ == "__main__":

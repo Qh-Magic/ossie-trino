@@ -13,11 +13,10 @@ from .trino import TrinoClient, TrinoError
 
 
 def _parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="ossie-starrocks")
+    parser = argparse.ArgumentParser(prog="ossie-trino")
     commands = parser.add_subparsers(dest="command", required=True)
     compile_parser = commands.add_parser("compile")
     _add_semantic_inputs(compile_parser)
-    compile_parser.add_argument("--target", choices=("starrocks", "trino"), default="starrocks")
     query_parser = commands.add_parser("query", help="compile and execute a semantic request on Trino")
     _add_semantic_inputs(query_parser)
     query_parser.add_argument("--trino-url", required=True)
@@ -35,9 +34,8 @@ def main(argv: list[str] | None = None) -> int:
     arguments = _parser().parse_args(argv)
     try:
         query = _read_query(arguments.request)
-        target = arguments.target if arguments.command == "compile" else "trino"
         compiler = Compiler.from_file(arguments.model)
-        result = compiler.compile(query, target=target)
+        result = compiler.compile(query)
         if arguments.command == "query":
             executed = TrinoClient(
                 arguments.trino_url,

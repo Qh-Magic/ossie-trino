@@ -8,9 +8,9 @@ import unittest
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
-from ossie_starrocks.compiler import Compiler
-from ossie_starrocks.gateway import SemanticGateway, create_server
-from ossie_starrocks.trino import TrinoColumn, TrinoResult
+from ossie_trino.compiler import Compiler
+from ossie_trino.gateway import SemanticGateway, create_server
+from ossie_trino.trino import TrinoColumn, TrinoResult
 
 
 ROOT = Path(__file__).resolve().parents[1]

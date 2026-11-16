@@ -6,7 +6,7 @@ from email.message import Message
 import unittest
 from urllib.error import HTTPError
 
-from ossie_starrocks import TrinoClient, TrinoError
+from ossie_trino import TrinoClient, TrinoError
 
 
 class _Response(BytesIO):

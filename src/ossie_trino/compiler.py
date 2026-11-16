@@ -5,8 +5,7 @@ from pathlib import Path
 from typing import Literal
 
 from ._model import BoundModel, ModelError, load_document
-from ._starrocks import render_query
-from ._trino import render_query as render_trino_query
+from ._trino import render_query
 from .api import CompilationError, CompiledQuery, FieldFilter, MetricFilter, ModelIdentity, OutputColumn, Query
 from .planning import plan_query
 
@@ -54,17 +53,8 @@ class Compiler:
         except ModelError as error:
             raise CompilationError(error.code, error.location, str(error)) from error
 
-    def compile(
-        self,
-        query: Query,
-        *,
-        target: Literal["starrocks", "trino"] = "starrocks",
-    ) -> CompiledQuery:
+    def compile(self, query: Query) -> CompiledQuery:
         plan = plan_query(self._model, query)
-        if target == "starrocks":
-            return render_query(self._model, plan)
-        if target == "trino":
-            return render_trino_query(self._model, plan)
-        raise CompilationError("INVALID_TARGET", "$.target", f"unsupported SQL target {target!r}")
+        return render_query(self._model, plan)
 
 __all__ = ["CompilationError", "CompiledQuery", "Compiler", "FieldFilter", "MetricFilter", "ModelIdentity", "OutputColumn", "Query"]

@@ -3,9 +3,9 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "ossie-starrocks"
+name = "ossie-trino"
 version = "0.1.0"
-description = "Fail-closed Apache Ossie semantic compiler for StarRocks and Trino"
+description = "Fail-closed Apache Ossie semantic compiler and gateway for Trino"
 requires-python = ">=3.11"
 dependencies = ["jsonschema>=4.18,<5"]
 
@@ -13,8 +13,8 @@ dependencies = ["jsonschema>=4.18,<5"]
 yaml = ["PyYAML>=6"]
 
 [project.scripts]
-ossie-starrocks = "ossie_starrocks.cli:main"
-ossie-gateway = "ossie_starrocks.gateway:main"
+ossie-trino = "ossie_trino.cli:main"
+ossie-gateway = "ossie_trino.gateway:main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
@@ -23,4 +23,4 @@ package-dir = {"" = "src"}
 where = ["src"]
 
 [tool.setuptools.package-data]
-ossie_starrocks = ["ossie-schema-0.3.json"]
+ossie_trino = ["ossie-schema-0.3.json"]

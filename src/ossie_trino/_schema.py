@@ -10,7 +10,7 @@ from jsonschema import Draft202012Validator
 
 @lru_cache(maxsize=1)
 def _validator() -> Draft202012Validator:
-    schema_path = files("ossie_starrocks").joinpath("ossie-schema-0.3.json")
+    schema_path = files("ossie_trino").joinpath("ossie-schema-0.3.json")
     schema = json.loads(schema_path.read_text(encoding="utf-8"))
     Draft202012Validator.check_schema(schema)
     return Draft202012Validator(schema)

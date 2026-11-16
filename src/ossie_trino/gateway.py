@@ -39,7 +39,7 @@ class SemanticGateway:
         try:
             document = json.loads(body.decode("utf-8"))
             request = query_from_mapping(document)
-            compiled = self._compiler.compile(request, target="trino")
+            compiled = self._compiler.compile(request)
             executed = self._client.execute(compiled.sql)
         except (UnicodeDecodeError, json.JSONDecodeError) as error:
             return 400, {"code": "INVALID_JSON", "location": "$", "message": str(error)}

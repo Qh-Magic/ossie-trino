@@ -7,7 +7,7 @@ import tempfile
 import unittest
 from datetime import datetime
 
-from ossie_starrocks import (
+from ossie_trino import (
     CompilationError,
     Compiler,
     FieldFilter,
@@ -58,11 +58,11 @@ class CompilerTests(unittest.TestCase):
             Query(metrics=("revenue",), dimensions=("customers.country",)),
         )
         self.assertEqual(
-            "SELECT t1.`country` AS `d0`, SUM(t0.`amount`) AS `m0`\n"
-            "FROM `default_catalog`.`sales`.`orders` AS t0\n"
-            "LEFT JOIN `default_catalog`.`sales`.`customers` AS t1 "
-            "ON t0.`customer_id` = t1.`customer_id`\n"
-            "GROUP BY t1.`country`",
+            "SELECT t1.\"country\" AS \"d0\", SUM(t0.\"amount\") AS \"m0\"\n"
+            "FROM \"default_catalog\".\"sales\".\"orders\" AS t0\n"
+            "LEFT JOIN \"default_catalog\".\"sales\".\"customers\" AS t1 "
+            "ON t0.\"customer_id\" = t1.\"customer_id\"\n"
+            "GROUP BY t1.\"country\"",
             result.sql,
         )
         self.assertEqual(("customers.country", "revenue"), tuple(c.semantic_name for c in result.columns))
@@ -77,8 +77,8 @@ class CompilerTests(unittest.TestCase):
                 limit=10,
             ),
         )
-        self.assertIn("WHERE t0.`status` = 'O''Reilly'", result.sql)
-        self.assertIn("HAVING SUM(t0.`amount`) > 100", result.sql)
+        self.assertIn("WHERE t0.\"status\" = 'O''Reilly'", result.sql)
+        self.assertIn("HAVING SUM(t0.\"amount\") > 100", result.sql)
         self.assertTrue(result.sql.endswith("LIMIT 10"))
 
     def test_compiles_bound_layer3_filter_expression(self):
@@ -91,7 +91,7 @@ class CompilerTests(unittest.TestCase):
         )
 
         self.assertIn(
-            "WHERE ((t0.`status` IN ('complete', 'pending')) OR (t0.`status` LIKE 'vip%'))",
+            "WHERE ((t0.\"status\" IN ('complete', 'pending')) OR (t0.\"status\" LIKE 'vip%'))",
             result.sql,
         )
 
@@ -132,9 +132,9 @@ class CompilerTests(unittest.TestCase):
         )
 
         self.assertEqual(
-            "SELECT t0.`country` AS `d0`\n"
-            "FROM `default_catalog`.`sales`.`customers` AS t0\n"
-            "GROUP BY t0.`country`",
+            "SELECT t0.\"country\" AS \"d0\"\n"
+            "FROM \"default_catalog\".\"sales\".\"customers\" AS t0\n"
+            "GROUP BY t0.\"country\"",
             result.sql,
         )
         self.assertEqual(("customers.country",), tuple(c.semantic_name for c in result.columns))
@@ -145,9 +145,9 @@ class CompilerTests(unittest.TestCase):
             Query(dimensions=("orders.status", "customers.country")),
         )
 
-        self.assertIn("FROM `default_catalog`.`sales`.`orders` AS t0", result.sql)
-        self.assertIn("LEFT JOIN `default_catalog`.`sales`.`customers` AS t1", result.sql)
-        self.assertIn("GROUP BY t0.`status`, t1.`country`", result.sql)
+        self.assertIn("FROM \"default_catalog\".\"sales\".\"orders\" AS t0", result.sql)
+        self.assertIn("LEFT JOIN \"default_catalog\".\"sales\".\"customers\" AS t1", result.sql)
+        self.assertIn("GROUP BY t0.\"status\", t1.\"country\"", result.sql)
 
     def test_dimension_only_query_rejects_missing_anchor(self):
         model = sales_model()
@@ -186,11 +186,11 @@ class CompilerTests(unittest.TestCase):
             ),
         )
 
-        self.assertIn("SUM(t0.`amount`) AS `value`, 1 AS `present`", result.sql)
-        self.assertIn("COUNT(t0.`customer_id`) AS `value`, 1 AS `present`", result.sql)
+        self.assertIn("SUM(t0.\"amount\") AS \"value\", 1 AS \"present\"", result.sql)
+        self.assertIn("COUNT(t0.\"customer_id\") AS \"value\", 1 AS \"present\"", result.sql)
         self.assertIn("FULL OUTER JOIN s1", result.sql)
-        self.assertIn("THEN NULL ELSE s0.`value` END AS `m0`", result.sql)
-        self.assertIn("THEN 0 ELSE s1.`value` END AS `m1`", result.sql)
+        self.assertIn("THEN NULL ELSE s0.\"value\" END AS \"m0\"", result.sql)
+        self.assertIn("THEN 0 ELSE s1.\"value\" END AS \"m1\"", result.sql)
 
     def test_rejects_reverse_fanout(self):
         model = sales_model()
@@ -262,8 +262,8 @@ class CompilerTests(unittest.TestCase):
         model["datasets"][0]["fields"].append(field("double_amount", "amount * 2"))
         model["metrics"][0] = metric("revenue", "SUM(orders.double_amount)")
         result = self.compile(model, Query(metrics=("revenue",)))
-        self.assertIn("SUM((t0.`amount` * 2)) AS `m0`", result.sql)
-        self.assertNotIn("`double_amount`", result.sql)
+        self.assertIn("SUM((t0.\"amount\" * 2)) AS \"m0\"", result.sql)
+        self.assertNotIn("\"double_amount\"", result.sql)
 
     def test_rejects_computed_field_cycles(self):
         model = sales_model()
@@ -304,7 +304,7 @@ class CompilerTests(unittest.TestCase):
         model["version"] = "0.3.0.dev0"
         model["metrics"][0]["expression"] = {"sql": "SUM(orders.amount)"}
         result = self.compile(model, Query(metrics=("revenue",)))
-        self.assertIn("SUM(t0.`amount`) AS `m0`", result.sql)
+        self.assertIn("SUM(t0.\"amount\") AS \"m0\"", result.sql)
 
     def test_ossie_03_field_expression_names_source_columns(self):
         model = sales_model()
@@ -314,7 +314,7 @@ class CompilerTests(unittest.TestCase):
 
         result = self.compile(model, Query(metrics=("revenue",)))
 
-        self.assertIn("SUM((t0.`raw_amount` * 2))", result.sql)
+        self.assertIn("SUM((t0.\"raw_amount\" * 2))", result.sql)
 
     def test_ossie_03_does_not_expand_field_names_inside_field_expressions(self):
         model = sales_model()
@@ -326,7 +326,7 @@ class CompilerTests(unittest.TestCase):
 
         result = self.compile(model, Query(metrics=("revenue",)))
 
-        self.assertIn("SUM((t0.`second` + 1))", result.sql)
+        self.assertIn("SUM((t0.\"second\" + 1))", result.sql)
 
     def test_ossie_03_rejects_unknown_core_properties(self):
         model = sales_model()
@@ -376,7 +376,7 @@ class CompilerTests(unittest.TestCase):
 
         result = self.compile(model, Query(metrics=("revenue",)))
 
-        self.assertIn("SUM(t0.`amount`)", result.sql)
+        self.assertIn("SUM(t0.\"amount\")", result.sql)
 
     def test_ossie_03_requires_expression_objects(self):
         model = sales_model()
@@ -400,7 +400,7 @@ class CompilerTests(unittest.TestCase):
 
         result = self.compile(model, Query(metrics=("orders.raw_revenue",)))
 
-        self.assertIn("SUM(t0.`raw_amount`) AS `m0`", result.sql)
+        self.assertIn("SUM(t0.\"raw_amount\") AS \"m0\"", result.sql)
 
     def test_ossie_03_source_field_shadows_source_column_qualifier(self):
         model = sales_model()
@@ -420,7 +420,7 @@ class CompilerTests(unittest.TestCase):
 
         self.assert_error("UNKNOWN_FIELD", model)
 
-    def test_ossie_03_lowers_direct_scalar_functions_to_starrocks(self):
+    def test_ossie_03_lowers_direct_scalar_functions_to_trino(self):
         model = sales_model()
         model["version"] = "0.3.0.dev0"
         model["datasets"][0]["fields"].extend(
@@ -436,9 +436,9 @@ class CompilerTests(unittest.TestCase):
             Query(metrics=("revenue",), dimensions=("orders.normalized_status", "orders.order_month")),
         )
 
-        self.assertIn("UPPER(TRIM(t0.`raw_status`))", result.sql)
-        self.assertIn("DATE_TRUNC('month', t0.`ordered_at`)", result.sql)
-        self.assertIn("SUM(ABS(t0.`amount`))", result.sql)
+        self.assertIn("UPPER(TRIM(t0.\"raw_status\"))", result.sql)
+        self.assertIn("DATE_TRUNC('month', t0.\"ordered_at\")", result.sql)
+        self.assertIn("SUM(ABS(t0.\"amount\"))", result.sql)
 
     def test_ossie_03_compiles_required_string_and_math_functions(self):
         model = sales_model()
@@ -464,15 +464,11 @@ class CompilerTests(unittest.TestCase):
             }
         ]
 
-        starrocks = self.compiler(model).compile(
+        result = self.compiler(model).compile(
             Query(metrics=("math_profile",), dimensions=("orders.status_label",))
         )
-        trino = self.compiler(model).compile(
-            Query(metrics=("math_profile",), dimensions=("orders.status_label",)),
-            target="trino",
-        )
 
-        for sql in (starrocks.sql, trino.sql):
+        for sql in (result.sql,):
             self.assertIn("CONCAT(UPPER(", sql)
             self.assertIn("SPLIT_PART('a-b', '-', 2)", sql)
             self.assertIn("GREATEST(MOD(COUNT(", sql)
@@ -502,10 +498,9 @@ class CompilerTests(unittest.TestCase):
         ]
         query = Query(metrics=tuple(metric["name"] for metric in model["metrics"]))
 
-        starrocks = self.compiler(model).compile(query)
-        trino = self.compiler(model).compile(query, target="trino")
+        result = self.compiler(model).compile(query)
 
-        for sql in (starrocks.sql, trino.sql):
+        for sql in (result.sql,):
             self.assertIn("STDDEV_SAMP(", sql)
             self.assertIn("STDDEV_POP(", sql)
             self.assertIn("VAR_SAMP(", sql)
@@ -532,19 +527,13 @@ class CompilerTests(unittest.TestCase):
             ),
         )
 
-        starrocks = self.compiler(model).compile(query)
-        trino = self.compiler(model).compile(query, target="trino")
+        result = self.compiler(model).compile(query)
 
-        self.assertIn("LOCATE('o', t0.`status`)", starrocks.sql)
-        self.assertIn("(LOCATE('o', t0.`status`) > 0)", starrocks.sql)
-        self.assertIn("(LOCATE('c', t0.`status`) = 1)", starrocks.sql)
-        self.assertIn("(RIGHT(t0.`status`, LENGTH('e')) = 'e')", starrocks.sql)
-        self.assertIn('STRPOS(t0."status", \'o\')', trino.sql)
-        self.assertNotIn("LOCATE(", trino.sql)
-        self.assertIn('(SUBSTRING(t0."status", -(LENGTH(\'e\'))) = \'e\')', trino.sql)
+        self.assertIn('STRPOS(t0."status", \'o\')', result.sql)
+        self.assertNotIn("LOCATE(", result.sql)
+        self.assertIn('(SUBSTRING(t0."status", -(LENGTH(\'e\'))) = \'e\')', result.sql)
         for portable_name in ("CHARINDEX(", "CONTAINS(", "STARTSWITH(", "ENDSWITH("):
-            self.assertNotIn(portable_name, starrocks.sql)
-            self.assertNotIn(portable_name, trino.sql)
+            self.assertNotIn(portable_name, result.sql)
 
     def test_ossie_03_lowers_truncation_toward_zero(self):
         model = sales_model()
@@ -565,10 +554,9 @@ class CompilerTests(unittest.TestCase):
         ]
         query = Query(metrics=("positive", "negative", "integer"))
 
-        starrocks = self.compiler(model).compile(query)
-        trino = self.compiler(model).compile(query, target="trino")
+        result = self.compiler(model).compile(query)
 
-        for sql in (starrocks.sql, trino.sql):
+        for sql in (result.sql,):
             self.assertIn("SIGN(", sql)
             self.assertIn("FLOOR(ABS(", sql)
             self.assertIn("POWER(10, 2)", sql)
@@ -592,10 +580,9 @@ class CompilerTests(unittest.TestCase):
             },
         ]
 
-        direct = self.compiler(model).compile(Query(metrics=("count_sevenths",)), target="trino")
+        direct = self.compiler(model).compile(Query(metrics=("count_sevenths",)))
         staged = self.compiler(model).compile(
             Query(metrics=("orders_per_customer",), dimensions=("customers.country",)),
-            target="trino",
         )
 
         self.assertIn('CAST(COUNT(t0."customer_id") AS DOUBLE) / 7', direct.sql)
@@ -617,11 +604,11 @@ class CompilerTests(unittest.TestCase):
         result = self.compile(model, Query(metrics=("safe_average",)))
 
         self.assertIn(
-            "COALESCE(DIVIDE(SUM(t0.`amount`), NULLIF(COUNT(t0.`customer_id`), 0)), 0)",
+            "COALESCE((CAST(SUM(t0.\"amount\") AS DOUBLE) / NULLIF(COUNT(t0.\"customer_id\"), 0)), 0)",
             result.sql,
         )
 
-    def test_ossie_03_lowers_required_conditional_aliases_to_starrocks(self):
+    def test_ossie_03_lowers_required_conditional_aliases_to_trino(self):
         model = sales_model()
         model["version"] = "0.3.0.dev0"
         model["metrics"] = [
@@ -639,10 +626,10 @@ class CompilerTests(unittest.TestCase):
 
         result = self.compile(model, Query(metrics=("normalized_revenue",)))
 
-        self.assertIn("IF((COUNT(t0.`customer_id`) > 0)", result.sql)
-        self.assertIn("IF(SUM(t0.`amount`) IS NOT NULL", result.sql)
-        self.assertIn("IFNULL(SUM(t0.`amount`), 0)", result.sql)
-        self.assertIn("IFNULL(NULLIF(COUNT(t0.`customer_id`), 0), 0)", result.sql)
+        self.assertIn("IF((COUNT(t0.\"customer_id\") > 0)", result.sql)
+        self.assertIn("IF(SUM(t0.\"amount\") IS NOT NULL", result.sql)
+        self.assertIn("COALESCE(SUM(t0.\"amount\"), 0)", result.sql)
+        self.assertIn("COALESCE(NULLIF(COUNT(t0.\"customer_id\"), 0), 0)", result.sql)
         for ossie_alias in ("IFF(", "NVL(", "NVL2(", "ZEROIFNULL(", "NULLIFZERO("):
             self.assertNotIn(ossie_alias, result.sql)
 
@@ -663,8 +650,8 @@ class CompilerTests(unittest.TestCase):
             Query(metrics=("safe_ratio",), dimensions=("customers.country",)),
         )
 
-        self.assertIn("IFNULL(CASE WHEN s0.`present` IS NULL", result.sql)
-        self.assertIn("NULLIF(CASE WHEN s1.`present` IS NULL", result.sql)
+        self.assertIn("COALESCE(CASE WHEN s0.\"present\" IS NULL", result.sql)
+        self.assertIn("NULLIF(CASE WHEN s1.\"present\" IS NULL", result.sql)
         self.assertNotIn("NVL(", result.sql)
         self.assertNotIn("NULLIFZERO(", result.sql)
 
@@ -677,7 +664,6 @@ class CompilerTests(unittest.TestCase):
                 dimensions=("customers.country",),
                 where=(FieldFilter("orders.status", "eq", "complete"),),
             ),
-            target="trino",
         )
 
         self.assertIn('SUM(t0."amount") AS "m0"', result.sql)
@@ -686,7 +672,7 @@ class CompilerTests(unittest.TestCase):
             result.sql,
         )
         self.assertIn('WHERE t0."status" = \'complete\'', result.sql)
-        self.assertNotIn("`", result.sql)
+        self.assertNotIn('`', result.sql)
 
     def test_trino_target_lowers_cross_dataset_conditional_metric(self):
         model = sales_model()
@@ -702,7 +688,6 @@ class CompilerTests(unittest.TestCase):
 
         result = self.compiler(model).compile(
             Query(metrics=("safe_ratio",), dimensions=("customers.country",)),
-            target="trino",
         )
 
         self.assertIn('COALESCE(CASE WHEN s0."present" IS NULL', result.sql)
@@ -713,7 +698,7 @@ class CompilerTests(unittest.TestCase):
         )
         self.assertNotIn('COALESCE(s0."k0")', result.sql)
         self.assertNotIn("IFNULL", result.sql)
-        self.assertNotIn("`", result.sql)
+        self.assertNotIn('`', result.sql)
 
     def test_trino_target_uses_timestamp_type(self):
         model = sales_model()
@@ -724,7 +709,6 @@ class CompilerTests(unittest.TestCase):
                 metrics=("revenue",),
                 where=(FieldFilter("orders.ordered_at", "ge", datetime(2026, 1, 1, 12, 30)),),
             ),
-            target="trino",
         )
 
         self.assertIn("CAST('2026-01-01 12:30:00' AS TIMESTAMP)", result.sql)
@@ -738,19 +722,16 @@ class CompilerTests(unittest.TestCase):
                 metrics=("revenue",),
                 where=(FieldFilter("orders.status", "eq", "IFNULL DATETIME `literal`"),),
             ),
-            target="trino",
         )
 
         self.assertIn("'IFNULL DATETIME `literal`'", result.sql)
 
-    def test_rejects_unknown_sql_target(self):
-        with self.assertRaises(CompilationError) as caught:
+    def test_rejects_target_selector(self):
+        with self.assertRaises(TypeError):
             self.compiler(sales_model()).compile(
                 Query(metrics=("revenue",)),
                 target="duckdb",  # type: ignore[arg-type]
             )
-
-        self.assertEqual("INVALID_TARGET", caught.exception.code)
 
     def test_trino_target_lowers_string_edge_functions(self):
         model = sales_model()
@@ -770,7 +751,6 @@ class CompilerTests(unittest.TestCase):
                 metrics=("revenue",),
                 dimensions=("orders.status_prefix", "orders.status_suffix"),
             ),
-            target="trino",
         )
 
         self.assertIn('SUBSTRING(t0."status", 1, 2)', result.sql)
@@ -821,8 +801,8 @@ class CompilerTests(unittest.TestCase):
         result = self.compile(model, Query(metrics=("revenue",)))
 
         self.assertIn(
-            "SUM(CASE WHEN ((t0.`status` = 'complete') AND (t0.`amount` IS NOT NULL)) "
-            "THEN ((-t0.`amount`) % 10) ELSE 0 END)",
+            "SUM(CASE WHEN ((t0.\"status\" = 'complete') AND (t0.\"amount\" IS NOT NULL)) "
+            "THEN ((-t0.\"amount\") % 10) ELSE 0 END)",
             result.sql,
         )
 
@@ -844,8 +824,8 @@ class CompilerTests(unittest.TestCase):
         )
 
         self.assertIn(
-            "CASE WHEN ((t0.`raw_status` IS NULL) OR (t0.`raw_status` = '')) "
-            "THEN 'unknown' ELSE t0.`raw_status` END",
+            "CASE WHEN ((t0.\"raw_status\" IS NULL) OR (t0.\"raw_status\" = '')) "
+            "THEN 'unknown' ELSE t0.\"raw_status\" END",
             result.sql,
         )
 
@@ -864,7 +844,7 @@ class CompilerTests(unittest.TestCase):
         result = self.compile(model, Query(metrics=("revenue",), dimensions=("orders.flag",)))
 
         self.assertIn(
-            "CASE WHEN ((NOT (t0.`raw_status` = 'closed')) AND ((t0.`amount` + 1) IS NOT NULL)) "
+            "CASE WHEN ((NOT (t0.\"raw_status\" = 'closed')) AND ((t0.\"amount\" + 1) IS NOT NULL)) "
             "THEN 1 ELSE 0 END",
             result.sql,
         )
@@ -888,12 +868,12 @@ class CompilerTests(unittest.TestCase):
 
         result = self.compile(model, Query(metrics=("revenue",), dimensions=("orders.segment",)))
 
-        self.assertIn("t0.`raw_status` IN ('new', 'open')", result.sql)
-        self.assertIn("t0.`amount` BETWEEN 10 AND 100", result.sql)
-        self.assertIn("t0.`customer_name` LIKE 'A%'", result.sql)
-        self.assertIn("t0.`raw_status` NOT IN ('closed')", result.sql)
-        self.assertIn("t0.`amount` NOT BETWEEN 0 AND 1000", result.sql)
-        self.assertIn("t0.`customer_name` NOT LIKE '%test%'", result.sql)
+        self.assertIn("t0.\"raw_status\" IN ('new', 'open')", result.sql)
+        self.assertIn("t0.\"amount\" BETWEEN 10 AND 100", result.sql)
+        self.assertIn("t0.\"customer_name\" LIKE 'A%'", result.sql)
+        self.assertIn("t0.\"raw_status\" NOT IN ('closed')", result.sql)
+        self.assertIn("t0.\"amount\" NOT BETWEEN 0 AND 1000", result.sql)
+        self.assertIn("t0.\"customer_name\" NOT LIKE '%test%'", result.sql)
 
     def test_ossie_03_rejects_empty_in_list(self):
         model = sales_model()
@@ -934,15 +914,15 @@ class CompilerTests(unittest.TestCase):
         )
 
         self.assertIn(
-            "COUNT(DISTINCT CASE WHEN (t0.`status` = 'complete') THEN t0.`customer_id` END)",
+            "COUNT(DISTINCT CASE WHEN (t0.\"status\" = 'complete') THEN t0.\"customer_id\" END)",
             result.sql,
         )
         self.assertIn(
-            "COUNT(CASE WHEN (t0.`status` = 'complete') THEN 1 END)",
+            "COUNT(CASE WHEN (t0.\"status\" = 'complete') THEN 1 END)",
             result.sql,
         )
         self.assertIn(
-            "AVG(CASE WHEN (t0.`status` = 'complete') THEN t0.`amount` END)",
+            "AVG(CASE WHEN (t0.\"status\" = 'complete') THEN t0.\"amount\" END)",
             result.sql,
         )
         self.assertNotIn("ELSE 0", result.sql)
@@ -954,7 +934,7 @@ class CompilerTests(unittest.TestCase):
 
         result = self.compile(model, Query(metrics=("revenue",)))
 
-        self.assertIn("SUM(DISTINCT t0.`amount`)", result.sql)
+        self.assertIn("SUM(DISTINCT t0.\"amount\")", result.sql)
 
     def test_ossie_03_rejects_distinct_on_unsupported_aggregate(self):
         model = sales_model()
@@ -981,7 +961,7 @@ class CompilerTests(unittest.TestCase):
 
         result = self.compile(model, Query(metrics=("average_order_value",)))
 
-        self.assertIn("DIVIDE(SUM(t0.`amount`), COUNT(t0.`customer_id`))", result.sql)
+        self.assertIn('(CAST(SUM(t0."amount") AS DOUBLE) / COUNT(t0."customer_id"))', result.sql)
         self.assertNotIn("AGG(", result.sql)
 
     def test_ossie_03_plans_global_cross_grain_agg_in_stages(self):
@@ -1005,17 +985,17 @@ class CompilerTests(unittest.TestCase):
         result = self.compile(model, Query(metrics=("ratio",)))
 
         self.assertIn(
-            "s0 AS (SELECT COUNT(t0.`customer_id`) AS `value`, 1 AS `present`\nFROM "
-            "`default_catalog`.`sales`.`orders` AS t0)",
+            "s0 AS (SELECT COUNT(t0.\"customer_id\") AS \"value\", 1 AS \"present\"\nFROM "
+            "\"default_catalog\".\"sales\".\"orders\" AS t0)",
             result.sql,
         )
         self.assertIn(
-            "s1 AS (SELECT COUNT(t0.`customer_id`) AS `value`, 1 AS `present`\nFROM "
-            "`default_catalog`.`sales`.`customers` AS t0)",
+            "s1 AS (SELECT COUNT(t0.\"customer_id\") AS \"value\", 1 AS \"present\"\nFROM "
+            "\"default_catalog\".\"sales\".\"customers\" AS t0)",
             result.sql,
         )
-        self.assertIn("SELECT DIVIDE(CASE WHEN s0.`present` IS NULL THEN 0", result.sql)
-        self.assertIn("END, CASE WHEN s1.", result.sql)
+        self.assertIn("SELECT (CAST(CASE WHEN s0.\"present\" IS NULL THEN 0", result.sql)
+        self.assertIn("AS DOUBLE) / CASE WHEN s1.", result.sql)
         self.assertIn("FROM s0 CROSS JOIN s1", result.sql)
         self.assertEqual(("orders", "customers"), result.dependencies)
 
@@ -1039,11 +1019,11 @@ class CompilerTests(unittest.TestCase):
             ),
         )
 
-        self.assertIn("SUM(t0.`amount`) AS `value`, 1 AS `present`", result.sql)
-        self.assertIn("COUNT(t0.`customer_id`) AS `value`, 1 AS `present`", result.sql)
+        self.assertIn("SUM(t0.\"amount\") AS \"value\", 1 AS \"present\"", result.sql)
+        self.assertIn("COUNT(t0.\"customer_id\") AS \"value\", 1 AS \"present\"", result.sql)
         self.assertIn("FULL OUTER JOIN s1", result.sql)
         self.assertIn(
-            "THEN NULL ELSE s0.`value` END, CASE WHEN s1.`present` IS NULL THEN 0",
+            "CAST(CASE WHEN s0.\"present\" IS NULL THEN NULL ELSE s0.\"value\" END AS DOUBLE) / CASE WHEN s1.\"present\" IS NULL THEN 0",
             result.sql,
         )
 
@@ -1083,13 +1063,13 @@ class CompilerTests(unittest.TestCase):
 
         result = self.compile(model, Query(metrics=("ratio",), dimensions=("customers.country",)))
 
-        self.assertIn("t1.`country` AS `k0`, COUNT(t0.`customer_id`) AS `value`", result.sql)
-        self.assertIn("LEFT JOIN `default_catalog`.`sales`.`customers` AS t1", result.sql)
-        self.assertIn("t0.`country` AS `k0`, COUNT(t0.`customer_id`) AS `value`", result.sql)
+        self.assertIn("t1.\"country\" AS \"k0\", COUNT(t0.\"customer_id\") AS \"value\"", result.sql)
+        self.assertIn("LEFT JOIN \"default_catalog\".\"sales\".\"customers\" AS t1", result.sql)
+        self.assertIn("t0.\"country\" AS \"k0\", COUNT(t0.\"customer_id\") AS \"value\"", result.sql)
         self.assertIn("FULL OUTER JOIN s1 ON", result.sql)
-        self.assertIn("COALESCE(s0.`k0`, s1.`k0`) AS `d0`", result.sql)
-        self.assertIn("CASE WHEN s0.`present` IS NULL THEN 0", result.sql)
-        self.assertIn("CASE WHEN s1.`present` IS NULL THEN 0", result.sql)
+        self.assertIn("COALESCE(s0.\"k0\", s1.\"k0\") AS \"d0\"", result.sql)
+        self.assertIn("CASE WHEN s0.\"present\" IS NULL THEN 0", result.sql)
+        self.assertIn("CASE WHEN s1.\"present\" IS NULL THEN 0", result.sql)
 
     def test_ossie_03_pushes_safe_where_into_every_cross_grain_stage(self):
         model = sales_model()
@@ -1116,8 +1096,8 @@ class CompilerTests(unittest.TestCase):
         )
 
         self.assertEqual(2, result.sql.count("WHERE"))
-        self.assertIn("WHERE t1.`country` = 'TW'", result.sql)
-        self.assertIn("WHERE t0.`country` = 'TW'", result.sql)
+        self.assertIn("WHERE t1.\"country\" = 'TW'", result.sql)
+        self.assertIn("WHERE t0.\"country\" = 'TW'", result.sql)
 
     def test_ossie_03_cross_grain_where_rejects_fanout_stage(self):
         model = sales_model()
@@ -1166,8 +1146,8 @@ class CompilerTests(unittest.TestCase):
             ),
         )
 
-        self.assertIn("WHERE DIVIDE(CASE WHEN s0.`present` IS NULL THEN 0", result.sql)
-        self.assertIn("CASE WHEN s1.`present` IS NULL THEN 0 ELSE s1.`value` END) > 1", result.sql)
+        self.assertIn("WHERE (CAST(CASE WHEN s0.\"present\" IS NULL THEN 0", result.sql)
+        self.assertIn("AS DOUBLE) / CASE WHEN s1.\"present\" IS NULL THEN 0 ELSE s1.\"value\" END) > 1", result.sql)
 
     def test_ossie_03_rejects_agg_of_a_field(self):
         model = sales_model()

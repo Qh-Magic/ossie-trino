@@ -14,8 +14,8 @@ SUPPORTED_AGGREGATES = frozenset(
     }
 )
 
-# OSSIE_SQL_2026 functions whose syntax and argument order map directly to
-# StarRocks. Values are the accepted argument counts.
+# OSSIE_SQL_2026 functions whose syntax and argument order are supported by
+# the target renderer. Values are the accepted argument counts.
 SUPPORTED_SCALAR_FUNCTIONS = {
     "ABS": frozenset({1}),
     "CEIL": frozenset({1}),

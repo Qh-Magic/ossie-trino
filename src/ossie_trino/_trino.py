@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 
 from ._model import BoundModel
-from ._starrocks import render_query as render_starrocks_query
+from ._portable_sql import render_query as render_portable_query
 from .api import CompilationError, CompiledQuery
 from .planning import MultiStageQueryPlan, QueryPlan
 
@@ -23,12 +23,12 @@ def render_query(
 ) -> CompiledQuery:
     """Render a proven semantic plan as ordinary Trino SQL.
 
-    Planning is dialect-independent. The StarRocks renderer first produces the
-    compiler-owned SQL subset, then this tokenizer rewrites only identifiers
+    Planning is dialect-independent. The private base renderer first produces
+    the compiler-owned SQL subset, then this tokenizer rewrites only identifiers
     and known dialect tokens. String literals are never rewritten.
     """
 
-    compiled = render_starrocks_query(model, plan)
+    compiled = render_portable_query(model, plan)
     return CompiledQuery(
         sql=_to_trino_sql(compiled.sql),
         columns=compiled.columns,
