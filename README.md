@@ -116,10 +116,6 @@ The `test` workflow runs on Python 3.11, 3.12, and 3.13. The manually triggered 
 
 The Taiwan Traditional Chinese research report is available at [docs/research/trino-ossie.md](docs/research/trino-ossie.md).
 
-## Related project
-
-The independent StarRocks compiler lives in [`Qh-Magic/ossie-starrocks`](https://github.com/Qh-Magic/ossie-starrocks).
-
 ## License
 
 Apache License 2.0. See [LICENSE](LICENSE).
